@@ -20,7 +20,7 @@
     "variables",
     "DRY"
   ],
-  "author": "tompascall",
+  "author": "huashengwang1989,tompascall",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/tompascall/js-to-styles-var-loader/issues"
@@ -29,12 +29,16 @@
   "devDependencies": {
     "babel-jest": "^19.0.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
-    "babel-preset-env": "^1.6.0",
+    "babel-preset-env": "^1.7.0",
     "coveralls": "^2.12.0",
-    "jest": "^19.0.2"
+    "jest": "^19.0.2",
+    "jest-resolve": "^23.5.0",
+    "json-stable-stringify": "^1.0.1"
   },
   "dependencies": {
-    "decache": "^4.1.0",
-    "squba": "^0.1.4"
+    "decache": "^4.4.0",
+    "loader-utils": "^1.1.0",
+    "squba": "^0.1.4",
+    "string-replace-async": "^1.2.1"
   }
 }

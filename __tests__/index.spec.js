@@ -12,7 +12,12 @@ describe('js-to-styles-vars-loader', () => {
             _module: {
                 resource: 'fakeResource.scss'
             },
-            addDependency () {}
+            addDependency () {},
+            async (){
+                return function(...args){
+                    return Promise.resolve(args[args.length - 1])
+                }
+            }
         };
 
         it('exports a function', () => {
@@ -28,7 +33,7 @@ describe('js-to-styles-vars-loader', () => {
         it('calls getPreprocessorType with resource', () => {
             spyOn(operator, 'getPreprocessorType');
             loader.call(context, 'asdf');
-            expect(operator.getPreprocessorType).toHaveBeenCalledWith({ resource: context._module.resource });
+            expect(operator.getPreprocessorType).toHaveBeenCalledWith({ resource: context._module.resource, enforceType: null });
         });
 
         it('calls operator.mergeVarsToContent with content and loader context, and preprocessor type', () => {

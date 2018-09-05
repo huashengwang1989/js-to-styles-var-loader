@@ -44,7 +44,7 @@ To solve this problem, the project has the following files:
 ### Implementation
 
 For example, in `webpack.config.js`:
-```
+```javascript
 {
     test: /\.vue$/,
     use: [
@@ -108,20 +108,19 @@ For example, in `webpack.config.js`:
  
 In `common.styles.js`:
  
-```
+```javascript
 var shared_vars = require('./shared_variables.styles.js'); // This is a Node require 
 ```
  
 In `iview_overwrite.less`:
  
- ```
+ ```less
 @import "~iview/src/styles/index.less"; /* This is the less @import */
-require('shared_variables.json.js'); /* This is for the loader to parse */
+require('shared_variables.styles.js'); /* This is for the loader to parse */
  ```
  
 In `common.scss`:
 
+```scss
+require('common.styles.js'); /* This is for the loader to parse */
 ```
-require('@styles/common.json.js'); /* This is for the loader to parse */
-```
-

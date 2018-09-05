@@ -2,162 +2,99 @@
 
 ## js-to-styles-var-loader
 
-### A [Webpack](https://webpack.github.io/) loader to share variable data between javascript modules and sass or less files
+Forked from tompascall's project [js-to-styles-var-loader](https://github.com/tompascall/js-to-styles-var-loader).
 
-This loader is for that special case when you would like to import data from a javascript module into a sass /less file. The [sass](https://github.com/webpack-contrib/sass-loader) / [less](http://lesscss.org/) loader complains, because importing js module is not a valid instruction.
+Please read from the original project page for the details.
 
-##### The loader only handles the case when you want to inject variable data into a sass / less file via a javascript module.
+I am currently working on the `dev` branch. `master` branch is still the original project.
 
-#### Prerequisites
+### Problemm to Solve
 
-- Nodejs >= 4.0
-- Webpack for module bundling
+I am using selected components from iView, which `less` is used. iView provides a template `less` file, with a long list of variables which you can select from to overwrite its default styles.
+
+My project uses Vue.js, and `scss` is used in the template file. I would like to have a list of set style variables in `scss`.
+
+Meanwhile, in many cases, the JavaScripts inside the Vue components would like to know the styles.
+
+To make the styles consistent inside a project, it would be best if the styles where the above-mentioned 3 places would like to reference are the same. However, it would be rather silly to maintain a `less` file, an `scss` file and a `js` file for almost the same contents.
+
+To solve this problem, the project has the following files:
+
+- `shared_variables.styles.js`: exports a js Object for styles to be shared across iView and my own styles
+- `iview_overwrite.less`: imports `shared_variables.styles.js`, plus some additional `less` variables
+- `common.styles.js`: imports `shared_variables.styles.js`, plus some additional styles in js, and exports a js Object.
+- `common.scss`: imports `common.styles.js`, plus some additional `scss`. The additionals would not be available for js.
+
+`common.scss` would be injected at the top of the `scss` styles in every `.vue` Vue template file with `sass-resources-loader`.
+
+`common.styles.js` can be imported in the `main.js` or `app.js` of a project and set as global parameter.
 
 
-#### Setting up Webpack config
+This is to solve the following issues:
 
-Probably you use [sass-loader](https://github.com/webpack-contrib/sass-loader) or [less-loader](https://github.com/webpack-contrib/less-loader) with Webpack. The usage in this case is pretty simple: just put the js-to-styles-var-loader before the sass-loader / less-loader in your webpack config:
+- The original loader "cleverly" detects which processor to use (`less` or `sass`) by looking at the loader filenames. However, this would not work when the `scss` variables are to be injected into the Vue temple files. To solve the problem, I added a `useProcessor` option.
 
-For sass-loader:
-```js
+- Updated the RegEx check for `require` function so that webpack alias etc. can be supported.
+
+For example, in `webpack.config.js`:
+```
 {
-  rules: [
+    test: /\.vue$/,
+    use: [
+        {
+            loader: 'vue-loader',
+            options: {
+                extractCSS: true,
+                loaders: {
+                'css': 'vue-style-loader!css-loader',
+                'less': 'vue-style-loader!css-loader!less-loader',
+                'scss': [
+                    'vue-style-loader',
+                    'css-loader',
+                    'postcss-loader',
+                    'sass-loader',
+                    //'js-to-styles-var-loader', <= original loader would not work
+                    {
+                        loader: 'js-to-styles-var-loader',
+                        options: {
+                            useProcessor: 'scss', // specify it is 'sass', 'scss' or 'less'
+                        }
+                    },
+                    {
+                        loader: 'sass-resources-loader',
+                        options: {
+                            resources: path.resolve(__dirname, 'my_directory_to_styles/common.scss'),
+                        },
+                    },
+                ],
+                // ...
+            }
+        }
+    ]
+},
+{
     test: /\.scss$/,
     use: [
-      {
-        loader: "style-loader"
-      },
-      {
-        loader: "css-loader"
-      },
-      {
-        loader: "sass-loader"
-      },
-      {
-        loader: "js-to-styles-var-loader"
-      }
+        MiniCssExtractPlugin.loader,
+        'css-loader',
+        {
+            loader: 'sass-loader',
+            options: {
+                importer: sassJsonImporter,
+            }
+        },
+        {
+            loader: 'js-to-styles-var-loader', 
+            options: {
+                useProcessor: 'scss',
+            }
+        },
+        {
+            loader: 'sass-resources-loader',
+            options: {
+                resources: path.resolve(__dirname, 'my_directory_to_styles/common.scss'),
+            }
+        }
     ]
-  ]
 }
-```
-
-For less-loader:
-
-```js
-{
-  rules: [
-    test: /\.less$/,
-    use: [
-      {
-        loader: "style-loader"
-      },
-      {
-        loader: "css-loader"
-      },
-      {
-        loader: "less-loader"
-      },
-      {
-        loader: "js-to-styles-var-loader"
-      }
-    ]
-  ]
-}
-```
-#### Usage
-
-Let's assume we would like to store some variable data in a module like this:
-
-```js
-// colors.js
-
-const colors = {
-  'fancy-white': '#FFFFFE',
-  'fancy-black': '#000001'
-};
-
-module.exports = colors;
-```
-
-You can use this module in your favorite templates / frameworks etc., and you don't want to repeat yourself when using these colors in a sass file as variable (e.g. `$fancy-white: #FFFFFE; /*...*/ background-color: $fancy-white`). In this situation just require your module in the beginning of your sass module:
-```sass
-require('relative/path/to/colors.js');
-
-// ...
-.some-class {
-  background-color: $fancy-white
-}
-// ...
-```
-
-**The form of the required data is important**: it must be an object with key/values pair, the key will be the name of the variable.
-
-The js-to-styles-var-loader transforms this sass file and provides it in the following form for the sass-loader:
-
-```js
-$fancy-white: #FFFFFE;
-$fancy-black: #000001;
-
-.some-class {
-  background-color: $fancy-white
-}
-```
-
-#### Misc
-
-You can import from named exports and properties of those, although the value of these must still be a flat list:
-
-```js
-// themes.js
-
-module.exports = {
-  themes: {
-    blue_theme: {
-      some_color: "#00f"
-    },
-    red_theme: {
-      some_color: "#f00"
-    }
-  },
-  default: {
-    some_color: "#aaa"
-  }
-};
-```
-
-Variables definitions are inserted into your sass/less file in place of the `require()` statement, so you can override variables inside blocks:
-
-```less
-
-require("themes.js").default;
-
-.someThing {
-  color: @some_color;
-}
-
-.theme-blue {
-  require("themes.js").themes.blue_theme;
-
-  .someThing {
-    color: @some_color;
-  }
-}
-
-
-```
-
-#### Demo
-
-You can try the loader via a small fake app in the `demo` folder:
-```sh
-cd demo
-npm i
-npm run demo
-```
-The webpack dev server serves the app on `localhost:8030`. In the app we share data between js, less and sass modules.
-
-#### Development
-
-Run tests with `npm test` or `npm run test:watch`.
-
-The transformer is developed with tdd, so if you would like to contribute, please, write your tests for your new functionality, and send pull request to integrate your changes.
+ ```

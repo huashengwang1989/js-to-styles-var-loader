@@ -6,17 +6,21 @@ Forked from tompascall's project [js-to-styles-var-loader](https://github.com/to
 
 Please read from the original project page for the details.
 
+### Note
+
 I am currently working on the `dev` branch. `master` branch is still the original project.
 
-### Problemm to Solve
+Demos and tests have not been updated to this and are expected to run to errors. I would find another time to update them. Despite the updated loader works in my own project, I don't guarantee that this would work for all cases.
 
-I am using selected components from iView, which `less` is used. iView provides a template `less` file, with a long list of variables which you can select from to overwrite its default styles.
+### Problem to Solve
+
+I am using selected components from [iView](https://www.iviewui.com/docs/guide/start), which `less` is used. iView provides a [template `less` file](https://github.com/iview/iview/blob/2.0/src/styles/custom.less), with a long list of variables which you can select from to overwrite its default styles.
 
 My project uses Vue.js, and `scss` is used in the template file. I would like to have a list of set style variables in `scss`.
 
 Meanwhile, in many cases, the JavaScripts inside the Vue components would like to know the styles.
 
-To make the styles consistent inside a project, it would be best if the styles where the above-mentioned 3 places would like to reference are the same. However, it would be rather silly to maintain a `less` file, an `scss` file and a `js` file for almost the same contents.
+To make the styles consistent across a project, it would be best if the styles where the above-mentioned 3 places wish to reference to are the same. However, it would be rather silly to maintain a `less` file, an `scss` file and a `js` file for almost the same contents.
 
 To solve this problem, the project has the following files:
 
@@ -29,12 +33,15 @@ To solve this problem, the project has the following files:
 
 `common.styles.js` can be imported in the `main.js` or `app.js` of a project and set as global parameter.
 
+### Issues to Address and Updates
 
-This is to solve the following issues:
+- The original loader "cleverly" detects which processor to use (`less` or `sass`) by looking at the file exntensions. However, this would not work when the `scss` variables are to be injected into the Vue temple files. To solve the problem, I added a `useProcessor` option.
 
-- The original loader "cleverly" detects which processor to use (`less` or `sass`) by looking at the loader filenames. However, this would not work when the `scss` variables are to be injected into the Vue temple files. To solve the problem, I added a `useProcessor` option.
+- The RegEx check for `require` function so that webpack alias *etc.* which usually uses `'@'` sign can be supported. Webpack `resolve` is now used to resolve the required path in place of `path.join`.
 
-- Updated the RegEx check for `require` function so that webpack alias etc. can be supported.
+- As webpack `resolve`, this is now an async loader.
+
+### Implementation
 
 For example, in `webpack.config.js`:
 ```
@@ -97,4 +104,24 @@ For example, in `webpack.config.js`:
         }
     ]
 }
+```
+ 
+In `common.styles.js`:
+ 
+```
+var shared_vars = require('./shared_variables.styles.js'); // This is a Node require 
+```
+ 
+In `iview_overwrite.less`:
+ 
  ```
+@import "~iview/src/styles/index.less"; /* This is the less @import */
+require('shared_variables.json.js'); /* This is for the loader to parse */
+ ```
+ 
+In `common.scss`:
+
+```
+require('@styles/common.json.js'); /* This is for the loader to parse */
+```
+

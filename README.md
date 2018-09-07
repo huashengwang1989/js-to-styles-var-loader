@@ -38,6 +38,7 @@ To solve this problem, the project has the following files:
 - The original loader "cleverly" detects which processor to use (`less` or `sass`) by looking at the file exntensions. However, this would not work when the `scss` variables are to be injected into the Vue temple files. To solve the problem, I added a `useProcessor` option.
 
 - The RegEx check for `require` function so that webpack alias *etc.* which usually uses `'@'` sign can be supported. Webpack `resolve` is now used to resolve the required path in place of `path.join`.
+Update: webpack cannot resolve if it is only the filename inside the `require`. It will output an `Error`. In this case, `path.join` would take over.
 
 - As webpack `resolve`, this is now an async loader.
 

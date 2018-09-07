@@ -123,8 +123,9 @@ const operator = {
             return new Promise((resolve,reject) => {
                 function handlePathResolve(err, modulePath){
                     if (!!err){
-                        reject(new Error(`Error in resolving path "${relativePath}".`))
-                        return;
+                        // If only the file name, webpackContext.resolve would throw an error.
+                        // in this case, just join the path.
+                        modulePath = path.join(webpackContext.context, relativePath);
                     }
                     const varData = this.getVarData(modulePath, this.propDeDot(property));
                     webpackContext.addDependency(modulePath);
